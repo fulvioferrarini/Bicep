@@ -1,0 +1,82 @@
+name: DeployAzureInfrastructure
+
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  - name: azureConnection
+    value: spn-ado-automation
+
+  - name: defaultLocation
+    value: westeurope
+
+parameters:
+  - name: resourceGroupName
+    default: azws-bicep-pipeline-rg
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: stValidate
+    displayName: Validation
+    jobs:
+      - job: jbValidateBicepTemplate
+        displayName: Validate Bicep Templates
+        steps:
+          - task: AzureCLI@2
+            displayName: Validate Bicep
+            name: tskValidateRG
+            inputs:
+              azureSubscription: $(azureConnection)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub validate --template-file "$(System.DefaultWorkingDirectory)/6. Pipelines/resources/main.bicep" --location $(defaultLocation) --parameters name=${{ parameters.resourceGroupName }}
+
+      - job: jbWhatIfBicepTemplate
+        condition: succeeded()
+        displayName: Check WhatIf
+        steps:
+          - task: AzureCLI@2
+            displayName: WhatIf Bicep
+            name: tskWhatIfRG
+            inputs:
+              azureSubscription: $(azureConnection)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create --name DeployRG --what-if --template-file "$(System.DefaultWorkingDirectory)/6. Pipelines/resources/main.bicep" --location $(defaultLocation) --parameters name=${{ parameters.resourceGroupName }}
+
+  - stage: stApproval
+    displayName: Approval
+    jobs:
+      - job: jbApproval
+        displayName: Approve Deployment
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            displayName: Approve Bicep Deployment
+            timeoutInMinutes: 3600
+            inputs:
+              notifyUsers: |
+                fulvio.ferrarini@softwareone.com
+              instructions: "Please approve the pending Bicep Deployment"
+
+  - stage: stDeploy
+    displayName: Deploy
+    jobs:
+      - job: jbDeployBicepTemplate
+        displayName: Deploy Bicep Template
+        steps:
+          - task: AzureCLI@2
+            name: tskDeployRG
+            displayName: Deploy Bicep
+            inputs:
+              azureSubscription: $(azureConnection)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create --name DeployBicep --template-file "$(System.DefaultWorkingDirectory)/6. Pipelines/resources/main.bicep" --location $(defaultLocation) --parameters name=${{ parameters.resourceGroupName }}

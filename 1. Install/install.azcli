@@ -1,0 +1,16 @@
+# https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/install#windows
+
+# manually install bicep
+az bicep install
+
+# upgrade to the latest version
+az bicep update
+
+# validate installation
+az bicep version
+
+# Windows - Chocolatey
+choco install bicep
+
+# Windows - Winget
+winget install -e --id Microsoft.Bicep
