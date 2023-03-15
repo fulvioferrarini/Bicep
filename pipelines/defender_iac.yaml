@@ -1,0 +1,13 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+ - task: MicrosoftSecurityDevOps@1
+   displayName: 'Microsoft Security DevOps'
+   inputs:
+     categories: 'IaC,secrets'
+     break: false
+     publish: true
