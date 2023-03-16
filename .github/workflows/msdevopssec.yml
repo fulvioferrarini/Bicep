@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sample:
+  iac_scanning:
 
     # MSDO runs on windows-latest and ubuntu-latest.
     # macos-latest supporting coming soon
